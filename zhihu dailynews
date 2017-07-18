@@ -1,0 +1,87 @@
+# -*- coding:utf-8 -*-
+import urllib2
+import re
+import HTMLParser
+import requests
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
+
+def getHtml(url):
+    header = {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0'}
+    requests = urllib2.Request(url,headers=header)
+    respense = urllib2.urlopen(requests)#打开网址
+    text = respense.read()#获取源码
+    #print text
+    return text
+#解析每一条日报超链接
+def getUrls(html):
+    pattern = re.compile('<a href="/story/(.*?)"',re.S)
+    items = re.findall(pattern,html)
+    #print items
+    #return items
+    urls = []#拼接好的链接
+    for item in items:
+        urls.append('http://daily.zhihu.com/story/'+item)
+        #print urls
+    return urls
+#解析日报内容
+def getContent(url):
+    html = getHtml(url) #调用函数
+    pattern = re.compile('<h1 class="headline-title">(.*?)</h1>')
+    items = re.findall(pattern,html)
+    #print items #中文在可迭代对象里面是unicode编码
+
+    pattern = re.compile('<div class="content">\\n<p>(.*?)</div>',re.S)
+    items_withtag = re.findall(pattern,html)
+    for item in items_withtag:
+        for content in characterProcessing(item):
+            print content
+
+#过滤
+def characterProcessing(html):
+    htmlParser = HTMLParser.HTMLParser()
+    pattern = re.compile('<p>(.*?)</p>|<li>(.*?)</li>.*?',re.S)
+    items = re.findall(pattern,html)
+    result = []
+    for index in items:
+
+        if index !='':
+            for content in index:
+                tag = re.search('<.*?>',content)
+                http = re.search('<.*?http.*?',content)
+                html_tag = re.search('&',content)
+                if html_tag:
+                    content = htmlParser.unescape(content)
+
+                if http:
+                    continue
+                elif tag:
+                    pattern = re.compile('(.*?)<.*?>(.*?)</.*?>(.*)')
+                    items = re.findall(pattern,content)
+                    content_tags = ''
+                    if len(items)>0:
+                        for item in items:
+                            if len(item)>0:
+                                for item_s in item:
+                                    content_tags = content_tags + item_s
+                            else:
+                                content_tags = content_tags + item_s
+                        content_tags = re.sub('<.*?>',' ',content_tags)
+                        result.append(content_tags)
+                    else:
+                        continue
+                else:
+                    result.append(content)
+    return result
+def main():
+    url = "http://daily.zhihu.com/"
+    html = getHtml(url)#获取源码
+    urls = getUrls(html)#获取链接
+    for url in urls:
+        try:
+            getContent(url) #获取超链接的文本内容
+        except Exception,e:
+            print e
+if __name__ == "__main__":
+    main()
