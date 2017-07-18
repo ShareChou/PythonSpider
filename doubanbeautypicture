@@ -1,0 +1,30 @@
+# -*- coding:utf-8 -*-
+import urllib2
+from bs4 import BeautifulSoup
+import  sys
+import urllib
+reload(sys)
+#sys.setdefaultenconcoding('utf-8')
+#url = 'http://www.dbmeinv.com/?pager_offset=2'
+x = 0
+
+def crawl(url):
+    headers = {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; … Gecko/20100101 Firefox/54.0'}
+    req = urllib2.Request(url,headers=headers)#创建对象
+    page = urllib2.urlopen(req,timeout=20)#设置超时
+    contents = page.read()#获取源码
+    soup = BeautifulSoup(contents,'html.parser')
+    my_girl = soup.find_all('img')
+    for girl in my_girl:
+        link = girl.get('src')
+
+        global x #全局变量
+        urllib.urlretrieve(link,'image\%s.jpg'%x)#下载
+        x += 1
+        print "loading %s picture"%x
+
+for page in range(1,100):
+    page+=1
+    url='http://www.dbmeinv.com/?pager_offset=%s'%page
+    crawl(url)
+print "end!!!"
