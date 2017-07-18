@@ -1,0 +1,36 @@
+# -*- coding:utf-8 -*-
+from bs4 import BeautifulSoup
+import urllib2
+url = 'http://www.pythontab.com/html/pythonhexinbiancheng/index.html'
+url_list = [url]
+for i in range(2,19):
+    url_list.append('http://www.pythontab.com/html/pythonhexinbiancheng/%s.html'%i)
+source_list=[]
+for j in url_list:
+    request = urllib2.urlopen(j)
+    html = request.read()#获取所有源代码
+    soup = BeautifulSoup(html,'html.parser')#解析网页
+    titles = soup.select('#catlist > li > a')
+    # print titles
+    links = soup.select('#catlist > li > a')
+    for title,link in zip(titles,links): #zip函数
+        data = {
+            "title" : title.get_text(),#获取标题文本
+            "link" : link.get('href')#获取标签
+        }
+        source_list.append(data)
+
+    for l in source_list:
+        request = urllib2.urlopen(l['link'])
+        html = request.read()
+        soup = BeautifulSoup(html,'html.parser')
+        text_p = soup.select('div.content > p')
+        text = []
+        for t in text_p:
+            text.append(t.get_text().encode('utf-8'))
+
+        title_text = l['title']
+        title_text = title_text.replace('*',' ').replace('/','or').replace('``',' ' ).replace('?','wh').replace(':',' ')
+        with open('study/%s.txt'%title_text,'wb') as f:
+            for a in text:
+                f.write(a)
